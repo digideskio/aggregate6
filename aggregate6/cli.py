@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2015 Job Snijders <job@instituut.net>
+# Copyright (C) 2014-2016 Job Snijders <job@instituut.net>
 #
 # This file is part of aggregate6
 #
@@ -54,7 +54,7 @@ def aggregate(tree):
         # current prefix
         cp = ip_network(prefix)
         # bail out if we have ::/0
-        if cp == "::/0":
+        if cp in ["::/0", "0.0.0.0/0"]:
             r_tree.add(str(cp))
             continue
         # fetch next prefix
@@ -84,6 +84,8 @@ for entries read on input. The default is 128. Prefixes with longer lengths \
 will be discarded prior to processing.")
     parser.add_argument('-v', dest='version', action='store_true',
                         help="Display aggregate6 version")
+    parser.add_argument('-4', dest='ipv4', action='store_true',
+                        help="IPv4 mode")
     parser.add_argument('args', nargs=argparse.REMAINDER,
                         help='<file> [ ... <file> ] or STDIN')
     args = parser.parse_args()
@@ -101,11 +103,14 @@ will be discarded prior to processing.")
         try:
             prefix = str(ip_network(elem.strip()))
         except ValueError:
-            sys.stderr.write("ERROR: '%s' is not a valid IPv6 network, \
+            sys.stderr.write("ERROR: '%s' is not a valid IP network, \
     ignoring.\n" % elem.strip())
             continue
         prefix_obj = ip_network(prefix)
         if prefix_obj.version == 6 and \
+                prefix_obj.prefixlen <= args.maximum_length:
+            p_tree.add(prefix)
+        if args.ipv4 and prefix_obj.version == 4 and \
                 prefix_obj.prefixlen <= args.maximum_length:
             p_tree.add(prefix)
 
